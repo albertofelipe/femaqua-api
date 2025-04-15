@@ -5,12 +5,12 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class ToolCollectionResource extends ResourceCollection
+class TagCollection extends ResourceCollection
 {
     public function toArray(Request $request): array
     {
         return [
-            "data" => ToolResource::collection($this->collection),
+            "data" => TagResource::collection($this->collection),
             'pagination' => [
                 'current_page' => $this->currentPage(),
                 'next_page' => $this->nextPageUrl(),
@@ -19,6 +19,6 @@ class ToolCollectionResource extends ResourceCollection
                 'total' => $this->total(),
                 'last_page' => $this->lastPage(),
             ],
-        ];
+        ];    
     }
 }
