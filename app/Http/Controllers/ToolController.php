@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ToolNotFoundException;
+use App\Http\Requests\BulkCreateToolRequest;
 use App\Http\Requests\CreateToolRequest;
 use App\Http\Requests\UpdateToolRequest;
 use App\Http\Resources\ToolCollection;
@@ -11,6 +12,7 @@ use App\Models\Tool;
 use Illuminate\Http\Request;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
 
 class ToolController extends Controller
 {
@@ -38,6 +40,17 @@ class ToolController extends Controller
 
         return response()->json(new ToolResource($tool), 201);
     }
+
+    public function bulkStore(BulkCreateToolRequest $request) 
+    {
+        $validatedData = $request->validated();
+        $tools = DB::transaction(function () use ($validatedData) {
+            return $this->createToolsWithTags($validatedData['tools']);
+        });
+    
+        return response()->json(ToolResource::collection($tools), 201);
+    }
+    
 
     public function show($id) 
     {
@@ -76,6 +89,20 @@ class ToolController extends Controller
         }
 
         return response()->json(new ToolResource($tool), 200);
+    }
+
+    private function createToolsWithTags(array $toolsData)
+    {
+        return collect($toolsData)->map(function ($toolData) {
+            $tool = Tool::create([
+                ...$toolData,
+                'user_id' => request()->user()->id,
+            ]);
+
+            $tool->syncTags($toolData['tags'] ?? []);
+
+            return $tool;
+        });
     }
 
 }
