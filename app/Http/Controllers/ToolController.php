@@ -43,10 +43,21 @@ class ToolController extends Controller
         $tool = Tool::with('tags')
                     ->find($id) 
                     ?? throw new ToolNotFoundException();
-                    
+
         $this->authorize('view', $tool);
 
         return response()->json(new ToolResource($tool), 200);
+    }
+
+    public function destroy($id) 
+    {
+        $tool = Tool::find($id) 
+                    ?? throw new ToolNotFoundException();
+
+        $this->authorize('delete', $tool);
+
+        $tool->delete();
+        return response()->json(['message' => 'Tool deleted successfully'], 200);
     }
 
 }
