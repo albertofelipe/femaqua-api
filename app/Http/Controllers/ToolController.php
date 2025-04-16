@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ToolNotFoundException;
-use App\Http\Requests\ToolRequest;
+use App\Http\Requests\CreateToolRequest;
+use App\Http\Requests\UpdateToolRequest;
 use App\Http\Resources\ToolCollection;
 use App\Http\Resources\ToolResource;
 use App\Models\Tool;
@@ -26,7 +27,7 @@ class ToolController extends Controller
         return response()->json($tools, 200);
     }
 
-    public function store(ToolRequest $request) 
+    public function store(CreateToolRequest $request) 
     {
         $tool = Tool::create([
             ...$request->validated(),
@@ -58,6 +59,23 @@ class ToolController extends Controller
 
         $tool->delete();
         return response()->json(['message' => 'Tool deleted successfully'], 200);
+    }
+
+    public function update(UpdateToolRequest $request, $id) 
+    {
+        $tool = Tool::with('tags')
+                    ->find($id) 
+                    ?? throw new ToolNotFoundException();
+
+        $this->authorize('update', $tool);
+
+        $tool->update($request->validated());
+
+        if($request->has('tags')) {
+            $tool->syncTags($request->input('tags', []));
+        }
+
+        return response()->json(new ToolResource($tool), 200);
     }
 
 }
