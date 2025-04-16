@@ -71,17 +71,9 @@ class ToolControllerTest extends TestCase
 
     public function test_store_successfull()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $user = $this->createAuthenticatedUser();
 
-        $toolData = [
-            'title' => 'Test Tool',
-            'link' => 'https://test.com',
-            'description' => 'This is a test tool',
-            'tags' => ['laravel'],
-            'user_id' => $user->id,
-        ];
+        $toolData = $this->getValidToolData(['user_id' => $user->id]);
         
         $response = $this->postJson("/api/tools", $toolData);
         
@@ -97,22 +89,15 @@ class ToolControllerTest extends TestCase
             'user_id' => $user->id,
         ]);
         $this->assertDatabaseHas('tags', [
-            'name' => 'laravel',
+            'name' => 'test-tag',
         ]);
     }
 
     public function test_store_with_invalid_data()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $this->createAuthenticatedUser();
 
-        $toolData = [
-            'title' => '',
-            'link' => 'invalid-url',
-            'description' => '',
-            'tags' => ['laravel'],
-        ];
+        $toolData = $this->getInvalidToolData();
         
         $response = $this->postJson("/api/tools", $toolData);
         
@@ -121,10 +106,8 @@ class ToolControllerTest extends TestCase
     }
 
     public function test_show_tool_successfull()
-    {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+    {        
+        $user = $this->createAuthenticatedUser();
 
         $tool = Tool::factory()->for($user)->hasTags(2)->create();
         
@@ -139,9 +122,9 @@ class ToolControllerTest extends TestCase
 
     public function test_user_cannot_view_others_tool()
     {
-        User::factory()->create();
+        $user = $this->createAuthenticatedUser();
+
         $unauthorizedUser = User::factory()->create();
-        $user = User::first();
         $retrievedUser = User::find($unauthorizedUser->id);
         
         $tool = Tool::factory()->create(['user_id' => $user->id]);
@@ -152,10 +135,8 @@ class ToolControllerTest extends TestCase
     }
 
     public function test_show_tool_not_found()
-    {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+    {        
+        $user = $this->createAuthenticatedUser();
 
         $response = $this->getJson("/api/tools/9999");
         
@@ -173,9 +154,7 @@ class ToolControllerTest extends TestCase
 
     public function test_destroy_tool_successfull()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $user = $this->createAuthenticatedUser();
 
         $tool = Tool::factory()->for($user)->create();
         
@@ -188,9 +167,7 @@ class ToolControllerTest extends TestCase
     }
     public function test_destroy_tool_not_found()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $user = $this->createAuthenticatedUser();
 
         $response = $this->deleteJson("/api/tools/9999");
         
@@ -208,9 +185,9 @@ class ToolControllerTest extends TestCase
 
     public function test_user_cannot_delete_others_tool()
     {
-        User::factory()->create();
+        $user = $this->createAuthenticatedUser();
+
         $unauthorizedUser = User::factory()->create();
-        $user = User::first();
         $retrievedUser = User::find($unauthorizedUser->id);
 
         $tool = Tool::factory()->create(['user_id' => $user->id]);
@@ -222,18 +199,11 @@ class ToolControllerTest extends TestCase
 
     public function test_update_tool_successfull()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $user = $this->createAuthenticatedUser();
 
         $tool = Tool::factory()->for($user)->create();
         
-        $updatedData = [
-            'title' => 'Updated Tool',
-            'link' => 'https://updated.com',
-            'description' => 'This is an updated tool',
-            'tags' => ['laravel'],
-        ];
+        $updatedData = $this->getValidToolData();
         
         $response = $this->putJson("/api/tools/{$tool->id}", $updatedData);
         
@@ -249,22 +219,15 @@ class ToolControllerTest extends TestCase
             'description' => $updatedData['description'],
         ]);
         $this->assertDatabaseHas('tags', [
-            'name' => 'laravel',
+            'name' => 'test-tag',
         ]);
     }
 
     public function test_update_tool_not_found()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
-
-        $updatedData = [
-            'title' => 'Updated Tool',
-            'link' => 'https://updated.com',
-            'description' => 'This is an updated tool',
-            'tags' => ['laravel'],
-        ];
+        $this->createAuthenticatedUser();
+ 
+        $updatedData = $this->getValidToolData();
         
         $response = $this->putJson("/api/tools/9999", $updatedData);
         
@@ -274,18 +237,11 @@ class ToolControllerTest extends TestCase
 
     public function test_update_tool_with_invalid_data()
     {
-        User::factory()->create();
-        $user = User::first();
-        $this->actingAs($user); 
+        $user = $this->createAuthenticatedUser();
 
         $tool = Tool::factory()->for($user)->create();
         
-        $updatedData = [
-            'title' => '',
-            'link' => 'invalid-url',
-            'description' => '',
-            'tags' => ['laravel'],
-        ];
+        $updatedData = $this->getInvalidToolData();
         
         $response = $this->putJson("/api/tools/{$tool->id}", $updatedData);
         
@@ -303,22 +259,43 @@ class ToolControllerTest extends TestCase
 
     public function test_user_cannot_update_others_tool()
     {
-        User::factory()->create();
+        $user = $this->createAuthenticatedUser();
         $unauthorizedUser = User::factory()->create();
-        $user = User::first();
         $retrievedUser = User::find($unauthorizedUser->id);
 
         $tool = Tool::factory()->create(['user_id' => $user->id]);
 
-        $updatedData = [
-            'title' => 'Updated Tool',
-            'link' => 'https://updated.com',
-            'description' => 'This is an updated tool',
-            'tags' => ['laravel'],
-        ];
+        $updatedData = $this->getValidToolData();
 
         $this->actingAs($retrievedUser)
              ->putJson("/api/tools/{$tool->id}", $updatedData)
              ->assertForbidden();
+    }
+
+    private function createAuthenticatedUser()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user);
+        return $user;
+    }
+
+    private function getValidToolData(array $overrides = []): array
+    {
+        return array_merge([
+            'title' => 'Test Tool',
+            'link' => 'https://test.com',
+            'description' => 'Test description',
+            'tags' => ['test-tag']
+        ], $overrides);
+    }
+    private function getInvalidToolData(array $overrides = []): array
+    {
+        return array_merge([
+            'title' => '',
+            'link' => 'invalid-url',
+            'description' => '',
+            'tags' => ['test-tag']
+        ], $overrides);
     }
 }
