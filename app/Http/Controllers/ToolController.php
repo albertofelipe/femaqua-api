@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ToolNotFoundException;
 use App\Http\Requests\ToolRequest;
 use App\Http\Resources\ToolCollection;
 use App\Http\Resources\ToolResource;
 use App\Models\Tool;
 use Illuminate\Http\Request;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 class ToolController extends Controller
 {
+    use AuthorizesRequests;
     
     public function index(Request $request) 
     {
@@ -32,6 +36,17 @@ class ToolController extends Controller
         $tool->syncTags($request->input('tags', []));
 
         return response()->json(new ToolResource($tool), 201);
+    }
+
+    public function show($id) 
+    {
+        $tool = Tool::with('tags')
+                    ->find($id) 
+                    ?? throw new ToolNotFoundException();
+                    
+        $this->authorize('view', $tool);
+
+        return response()->json(new ToolResource($tool), 200);
     }
 
 }
