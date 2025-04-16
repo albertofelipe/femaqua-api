@@ -14,4 +14,5 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('tools', ToolController::class)->only(['update', 'destroy', 'store', 'show']);	
+    Route::post('/tools/bulk', [ToolController::class, 'bulkStore']);
 });
