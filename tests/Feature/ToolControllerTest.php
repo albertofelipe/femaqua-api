@@ -106,7 +106,63 @@ class ToolControllerTest extends TestCase
         
         $response = $this->postJson("/api/tools", $toolData);
         
-        $response->assertStatus(422)
+        $response->assertUnprocessable()
                  ->assertJsonValidationErrors(['title', 'link', 'description']);
+    }
+
+    public function test_show_tool_successfull()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $tool = Tool::factory()->for($user)->hasTags(2)->create();
+        
+        $response = $this->getJson("/api/tools/{$tool->id}");
+        
+        $response->assertOk()
+                 ->assertJsonFragment(['title' => $tool->title])
+                 ->assertJsonFragment(['link' => $tool->link])
+                 ->assertJsonFragment(['description' => $tool->description])
+                 ->assertJsonFragment(['tags' => $tool->tags->pluck('name')->toArray()]);
+    }
+
+    public function test_user_cannot_view_others_tool()
+    {
+        User::factory()->create();
+        $unauthorizedUser = User::factory()->create();
+        $user = User::first();
+        $retrievedUser = User::find($unauthorizedUser->id);
+        
+        $tool = Tool::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user); 
+
+        $this->getJson("/api/tools/{$tool->id}")
+             ->assertOk();
+
+        $this->actingAs($retrievedUser)
+             ->getJson("/api/tools/{$tool->id}")
+             ->assertForbidden();
+    }
+
+    public function test_show_tool_not_found()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $response = $this->getJson("/api/tools/9999");
+        
+        $response->assertNotFound()
+                 ->assertJson(['message' => 'Tool not found']);
+    }
+
+    public function test_guests_cannot_view_tools()
+    {
+        $tool = Tool::factory()->create();
+
+        $this->getJson("/api/tools/{$tool->id}")
+            ->assertUnauthorized();
     }
 }
