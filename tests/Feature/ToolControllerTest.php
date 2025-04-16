@@ -219,4 +219,106 @@ class ToolControllerTest extends TestCase
              ->deleteJson("/api/tools/{$tool->id}")
              ->assertForbidden();
     }
+
+    public function test_update_tool_successfull()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $tool = Tool::factory()->for($user)->create();
+        
+        $updatedData = [
+            'title' => 'Updated Tool',
+            'link' => 'https://updated.com',
+            'description' => 'This is an updated tool',
+            'tags' => ['laravel'],
+        ];
+        
+        $response = $this->putJson("/api/tools/{$tool->id}", $updatedData);
+        
+        $response->assertOk()
+                 ->assertJsonFragment(['title' => $updatedData['title']])
+                 ->assertJsonFragment(['link' => $updatedData['link']])
+                 ->assertJsonFragment(['description' => $updatedData['description']]);
+
+        $this->assertDatabaseHas('tools', [
+            'id' => $tool->id,
+            'title' => $updatedData['title'],
+            'link' => $updatedData['link'],
+            'description' => $updatedData['description'],
+        ]);
+        $this->assertDatabaseHas('tags', [
+            'name' => 'laravel',
+        ]);
+    }
+
+    public function test_update_tool_not_found()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $updatedData = [
+            'title' => 'Updated Tool',
+            'link' => 'https://updated.com',
+            'description' => 'This is an updated tool',
+            'tags' => ['laravel'],
+        ];
+        
+        $response = $this->putJson("/api/tools/9999", $updatedData);
+        
+        $response->assertNotFound()
+                 ->assertJson(['message' => 'Tool not found']);
+    }
+
+    public function test_update_tool_with_invalid_data()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $tool = Tool::factory()->for($user)->create();
+        
+        $updatedData = [
+            'title' => '',
+            'link' => 'invalid-url',
+            'description' => '',
+            'tags' => ['laravel'],
+        ];
+        
+        $response = $this->putJson("/api/tools/{$tool->id}", $updatedData);
+        
+        $response->assertUnprocessable()
+                 ->assertJsonValidationErrors(['title', 'link', 'description']);
+    }
+
+    public function test_guests_cannot_update_tools()
+    {
+        $tool = Tool::factory()->create();
+
+        $this->putJson("/api/tools/{$tool->id}")
+             ->assertUnauthorized();
+    }
+
+    public function test_user_cannot_update_others_tool()
+    {
+        User::factory()->create();
+        $unauthorizedUser = User::factory()->create();
+        $user = User::first();
+        $retrievedUser = User::find($unauthorizedUser->id);
+
+        $tool = Tool::factory()->create(['user_id' => $user->id]);
+
+        $updatedData = [
+            'title' => 'Updated Tool',
+            'link' => 'https://updated.com',
+            'description' => 'This is an updated tool',
+            'tags' => ['laravel'],
+        ];
+
+        $this->actingAs($retrievedUser)
+             ->putJson("/api/tools/{$tool->id}", $updatedData)
+             ->assertForbidden();
+    }
 }
