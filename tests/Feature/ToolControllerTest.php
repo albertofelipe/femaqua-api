@@ -272,6 +272,66 @@ class ToolControllerTest extends TestCase
              ->assertForbidden();
     }
 
+    public function test_bulk_store_successfull()
+    {
+        $user = $this->createAuthenticatedUser();
+
+        $toolsData = [
+                     $this->getValidToolData(['title' => 'Tool 1']), 
+                     $this->getValidToolData(['title' => 'Tool 2'])
+                    ];
+
+        $response = $this->postJson("/api/tools/bulk", ['tools' => $toolsData]);
+        
+        $response->assertCreated()
+                 ->assertJsonFragment(['title' => 'Tool 1'])
+                 ->assertJsonFragment(['title' => 'Tool 2']);
+
+        foreach ($toolsData as $toolData) {
+            $this->assertDatabaseHas('tools', [
+                'title' => $toolData['title'],
+                'link' => $toolData['link'],
+                'description' => $toolData['description'],
+                'user_id' => $user->id,
+            ]);
+        }
+    }
+
+    public function test_bulk_store_with_invalid_data()
+    {
+        $this->createAuthenticatedUser();
+
+        $toolsData = [
+            [
+                'title' => '',
+                'link' => 'invalid-url',
+                'description' => '',
+                'tags' => ['tag1']
+            ],
+            [
+                'title' => 'Tool 2',
+                'link' => 'https://tool2.com',
+                'description' => 'Description for Tool 2',
+                'tags' => ['tag3']
+            ]
+        ];
+
+        $response = $this->postJson("/api/tools/bulk", ['tools' => $toolsData]);
+        
+        $response->assertUnprocessable()
+                 ->assertJsonValidationErrors(['tools.0.title', 'tools.0.link', 'tools.0.description']);
+    }
+
+    public function test_bulk_store_with_empty_array()
+    {
+        $this->createAuthenticatedUser();
+
+        $response = $this->postJson("/api/tools/bulk", ['tools' => []]);
+        
+        $response->assertUnprocessable()
+                 ->assertJsonValidationErrors(['tools']);
+    }
+
     private function createAuthenticatedUser()
     {
         User::factory()->create();
@@ -298,4 +358,6 @@ class ToolControllerTest extends TestCase
             'tags' => ['test-tag']
         ], $overrides);
     }
+
+
 }
