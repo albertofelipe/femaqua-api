@@ -7,6 +7,7 @@ use Tests\TestCase;
 
 use App\Models\Tag;
 use App\Models\Tool;
+use App\Models\User;
 
 class ToolControllerTest extends TestCase
 {
@@ -66,5 +67,46 @@ class ToolControllerTest extends TestCase
         
         $response->assertOk()
                  ->assertJsonCount(0, 'data');
+    }
+
+    public function test_store_successfull()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $toolData = [
+            'title' => 'Test Tool',
+            'link' => 'https://test.com',
+            'description' => 'This is a test tool',
+            'tags' => ['laravel'],
+            'user_id' => $user->id,
+        ];
+        
+        $response = $this->postJson("/api/tools", $toolData);
+        
+        $response->assertCreated()
+                 ->assertJsonFragment(['title' => $toolData['title']])
+                 ->assertJsonFragment(['link' => $toolData['link']])
+                 ->assertJsonFragment(['description' => $toolData['description']]);
+    }
+
+    public function test_store_with_invalid_data()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $toolData = [
+            'title' => '',
+            'link' => 'invalid-url',
+            'description' => '',
+            'tags' => ['laravel'],
+        ];
+        
+        $response = $this->postJson("/api/tools", $toolData);
+        
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['title', 'link', 'description']);
     }
 }
