@@ -10,6 +10,13 @@ class Tool extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'title',
+        'description',
+        'link',
+        'user_id',
+    ];
+       
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -33,5 +40,15 @@ class Tool extends Model
         }
 
         return $query->with('tags')->latest();
+    }
+
+    public function syncTags(array $tagNames)
+    {
+        $tagIds = collect($tagNames)
+            ->map(fn ($name) => Tag::firstOrCreate(['name' => strtolower($name)])->id)
+            ->toArray();
+
+        $this->tags()->sync($tagIds);
+        $this->load('tags');
     }
 }
