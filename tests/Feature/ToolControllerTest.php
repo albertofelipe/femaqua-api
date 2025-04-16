@@ -89,6 +89,16 @@ class ToolControllerTest extends TestCase
                  ->assertJsonFragment(['title' => $toolData['title']])
                  ->assertJsonFragment(['link' => $toolData['link']])
                  ->assertJsonFragment(['description' => $toolData['description']]);
+
+        $this->assertDatabaseHas('tools',[
+            'title' => $toolData['title'],
+            'link' => $toolData['link'],
+            'description' => $toolData['description'],
+            'user_id' => $user->id,
+        ]);
+        $this->assertDatabaseHas('tags', [
+            'name' => 'laravel',
+        ]);
     }
 
     public function test_store_with_invalid_data()
@@ -136,11 +146,6 @@ class ToolControllerTest extends TestCase
         
         $tool = Tool::factory()->create(['user_id' => $user->id]);
 
-        $this->actingAs($user); 
-
-        $this->getJson("/api/tools/{$tool->id}")
-             ->assertOk();
-
         $this->actingAs($retrievedUser)
              ->getJson("/api/tools/{$tool->id}")
              ->assertForbidden();
@@ -163,6 +168,55 @@ class ToolControllerTest extends TestCase
         $tool = Tool::factory()->create();
 
         $this->getJson("/api/tools/{$tool->id}")
+             ->assertUnauthorized();
+    }
+
+    public function test_destroy_tool_successfull()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $tool = Tool::factory()->for($user)->create();
+        
+        $response = $this->deleteJson("/api/tools/{$tool->id}");
+        
+        $response->assertOk()
+                 ->assertJson(['message' => 'Tool deleted successfully']);
+        
+        $this->assertDatabaseMissing('tools', ['id' => $tool->id]);
+    }
+    public function test_destroy_tool_not_found()
+    {
+        User::factory()->create();
+        $user = User::first();
+        $this->actingAs($user); 
+
+        $response = $this->deleteJson("/api/tools/9999");
+        
+        $response->assertNotFound()
+                 ->assertJson(['message' => 'Tool not found']);
+    }
+
+    public function test_guests_cannot_delete_tools()
+    {
+        $tool = Tool::factory()->create();
+
+        $this->deleteJson("/api/tools/{$tool->id}")
             ->assertUnauthorized();
+    }
+
+    public function test_user_cannot_delete_others_tool()
+    {
+        User::factory()->create();
+        $unauthorizedUser = User::factory()->create();
+        $user = User::first();
+        $retrievedUser = User::find($unauthorizedUser->id);
+
+        $tool = Tool::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($retrievedUser)
+             ->deleteJson("/api/tools/{$tool->id}")
+             ->assertForbidden();
     }
 }
