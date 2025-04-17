@@ -54,7 +54,8 @@ class ToolController extends Controller
 
     public function show($id) 
     {
-        $tool = Tool::where('id', $id)
+        $tool = Tool::with('tags')
+                ->where('id', $id)
                 ->where('user_id', request()->user()->id)
                 ->firstOrFail();
 
@@ -65,7 +66,8 @@ class ToolController extends Controller
 
     public function destroy($id) 
     {
-        $tool = Tool::where('id', $id)
+        $tool = Tool::with('tags')
+                ->where('id', $id)
                 ->where('user_id', request()->user()->id)
                 ->firstOrFail();
 
@@ -77,7 +79,8 @@ class ToolController extends Controller
 
     public function update(UpdateToolRequest $request, $id) 
     {
-        $tool = Tool::where('id', $id)
+        $tool = Tool::with('tags')
+                ->where('id', $id)
                 ->where('user_id', request()->user()->id)
                 ->firstOrFail();
 
