@@ -54,19 +54,20 @@ class ToolController extends Controller
 
     public function show($id) 
     {
-        $tool = Tool::with('tags')
-                    ->find($id) 
-                    ?? throw new ToolNotFoundException();
+        $tool = Tool::where('id', $id)
+                ->where('user_id', request()->user()->id)
+                ->firstOrFail();
 
-        $this->authorize('view', $tool);
+        $this->authorize('view', $tool); 
 
         return response()->json(new ToolResource($tool), 200);
     }
 
     public function destroy($id) 
     {
-        $tool = Tool::find($id) 
-                    ?? throw new ToolNotFoundException();
+        $tool = Tool::where('id', $id)
+                ->where('user_id', request()->user()->id)
+                ->firstOrFail();
 
         $this->authorize('delete', $tool);
 
@@ -76,9 +77,9 @@ class ToolController extends Controller
 
     public function update(UpdateToolRequest $request, $id) 
     {
-        $tool = Tool::with('tags')
-                    ->find($id) 
-                    ?? throw new ToolNotFoundException();
+        $tool = Tool::where('id', $id)
+                ->where('user_id', request()->user()->id)
+                ->firstOrFail();
 
         $this->authorize('update', $tool);
 
