@@ -221,7 +221,7 @@ class ToolControllerTest extends TestCase
         $response = $this->deleteJson("/api/tools/{$tool->id}");
         
         $response->assertOk()
-                 ->assertJson(['message' => 'Tool deleted successfully']);
+                 ->assertJson([]);
         
         $this->assertDatabaseMissing('tools', ['id' => $tool->id]);
     }

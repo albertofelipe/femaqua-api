@@ -90,8 +90,10 @@ class ToolController extends Controller
      */
     public function index(Request $request)
     {
+        $tag = $request->query('tag') ?? null;
+
         $tools = new ToolCollection(
-            Tool::filterByRequest($request)
+            Tool::filterByRequest($tag)
                 ->paginate(10)
                 ->appends($request->query())
         );
@@ -121,7 +123,6 @@ class ToolController extends Controller
      *         response=201,
      *         description="Tool successfully created",
      *         @OA\JsonContent(
-     *             @OA\Property(property="id", type="integer", example=1),
      *             @OA\Property(property="title", type="string", example="laravel"),
      *             @OA\Property(property="link", type="string", example="https://www.laravel.com"),
      *             @OA\Property(property="description", type="string", example="laravel"),
@@ -130,8 +131,9 @@ class ToolController extends Controller
      *               type="array",
      *              @OA\Items(type="string", example="php"),
      *               example={"php", "laravel", "mysql"}
-     *            )
-     *         )
+     *            ),
+     *             @OA\Property(property="id", type="integer", example=1)
+     *         ) 
      *     ),
      *     @OA\Response(
      *         response=400,
@@ -197,15 +199,15 @@ class ToolController extends Controller
      *             type="array",
      *             @OA\Items(
      *                 type="object",
-     *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="title", type="string", example="laravel"),
      *                 @OA\Property(property="link", type="string", example="https://www.laravel.com"),
      *                 @OA\Property(property="description", type="string", example="laravel"),
-     *                 @OA\Property(property="tags", type="array", @OA\Items(type="string"), example={"php","laravel","mysql"})
+     *                 @OA\Property(property="tags", type="array", @OA\Items(type="string"), example={"php","laravel","mysql"}),
+     *                 @OA\Property(property="id", type="integer", example=1)
      *             ),
      *              example={
-     *                     {"title":"laravel","description":"laravel","link":"http://example.com","tags":{"php","laravel"}},
-     *                     {"title":"symfony","description":"framework","link":"http://symfony.com","tags":{"php","symfony"}}
+     *                     {"title":"laravel","description":"laravel","link":"http://example.com","tags":{"php","laravel"}, "id":1},
+     *                     {"title":"symfony","description":"framework","link":"http://symfony.com","tags":{"php","symfony"}, "id":2}
      *                 }
      *         )
      *     ),
@@ -312,10 +314,7 @@ class ToolController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Ferramenta deletada com sucesso",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="message", type="string", example="Tool deleted successfully")
-     *         )
+     *         @OA\JsonContent([]))
      *     ),
      *     @OA\Response(
      *         response=404,
@@ -343,7 +342,7 @@ class ToolController extends Controller
         $this->authorize('delete', $tool);
 
         $tool->delete();
-        return response()->json(['message' => 'Tool deleted successfully'], 200);
+        return response()->json([], 200);
     }
 
     /**

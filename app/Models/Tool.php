@@ -27,19 +27,17 @@ class Tool extends Model
         return $this->belongsToMany(Tag::class, 'tool_tag');
     }
 
-    public static function filterByRequest(Request $request)
+    public static function filterByRequest($tag)
     {
         $query = self::query();
 
-        if ($request->filled('tag')) {
-            $tag = $request->query('tag');
-        
+        if ($tag) {
             $query->whereHas('tags', function ($query) use ($tag) {
                 $query->where('name', $tag);
             });
         }
 
-        return $query->with('tags')->latest();
+        return $query->with('tags')->latest();;
     }
 
     public function syncTags(array $tagNames)
