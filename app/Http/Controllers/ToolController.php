@@ -90,11 +90,12 @@ class ToolController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = $request->query('per_page') ?? 10;
         $tag = $request->query('tag') ?? null;
 
         $tools = new ToolCollection(
             Tool::filterByRequest($tag)
-                ->paginate(10)
+                ->paginate(perPage: $perPage)
                 ->appends($request->query())
         );
 
@@ -314,7 +315,7 @@ class ToolController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Ferramenta deletada com sucesso",
-     *         @OA\JsonContent([]))
+     *         @OA\JsonContent(type="array", @OA\Items()))
      *     ),
      *     @OA\Response(
      *         response=404,

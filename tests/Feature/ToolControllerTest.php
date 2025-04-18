@@ -8,6 +8,7 @@ use Tests\TestCase;
 use App\Models\Tag;
 use App\Models\Tool;
 use App\Models\User;
+use function PHPUnit\Framework\assertJson;
 
 class ToolControllerTest extends TestCase
 {
@@ -69,7 +70,7 @@ class ToolControllerTest extends TestCase
                  ->assertJsonCount(0, 'data');
     }
 
-    public function test_store_successfull()
+    public function test_store_tool_successfull()
     {
         $user = $this->createAuthenticatedUser();
 
@@ -93,7 +94,7 @@ class ToolControllerTest extends TestCase
         ]);
     }
 
-    public function test_store_with_invalid_data()
+    public function test_store_tool_with_invalid_data()
     {
         $this->createAuthenticatedUser();
 
@@ -103,6 +104,28 @@ class ToolControllerTest extends TestCase
         
         $response->assertUnprocessable()
                  ->assertJsonValidationErrors(['title', 'link', 'description']);
+    }
+
+    public function test_store_tool_with_empty_data()
+    {
+        $this->createAuthenticatedUser();
+
+        $toolData = [];
+        
+        $response = $this->postJson("/api/tools", $toolData);
+        
+        $response->assertUnprocessable()
+                 ->assertJsonValidationErrors(['title', 'link', 'description']);
+    }
+
+    public function test_store_tool_guests_cannot_store_tools()
+    {
+        $toolData = $this->getValidToolData();
+        
+        $response = $this->postJson("/api/tools", $toolData);
+        
+        $response->assertUnauthorized()
+                 ->assertJson(['message' => 'Unauthenticated.']);
     }
     
     public function test_bulk_store_successfull()
@@ -135,25 +158,18 @@ class ToolControllerTest extends TestCase
         $this->createAuthenticatedUser();
 
         $toolsData = [
-            [
-                'title' => '',
-                'link' => 'invalid-url',
-                'description' => '',
-                'tags' => ['tag1']
-            ],
-            [
-                'title' => 'Tool 2',
-                'link' => 'https://tool2.com',
-                'description' => 'Description for Tool 2',
-                'tags' => ['tag3']
-            ]
+            $this->getInvalidToolData(),
+            $this->getInvalidToolData()
         ];
 
         $response = $this->postJson("/api/tools/bulk", ['tools' => $toolsData]);
         
         $response->assertUnprocessable()
-                 ->assertJsonValidationErrors(['tools.0.title', 'tools.0.link', 'tools.0.description']);
+                 ->assertJsonValidationErrors(['tools.0.title', 'tools.0.link', 'tools.0.description'])
+                 ->assertJsonValidationErrors(['tools.1.title', 'tools.1.link', 'tools.1.description']);
     }
+
+
 
     public function test_bulk_store_with_empty_array()
     {
@@ -180,7 +196,7 @@ class ToolControllerTest extends TestCase
                  ->assertJsonFragment(['tags' => $tool->tags->pluck('name')->toArray()]);
     }
 
-    public function test_user_cannot_view_others_tool()
+    public function test_show_tool_user_cannot_view_others_tool()
     {
         $user = $this->createAuthenticatedUser();
 
@@ -191,7 +207,7 @@ class ToolControllerTest extends TestCase
 
         $this->actingAs($retrievedUser)
              ->getJson("/api/tools/{$tool->id}")
-             ->assertNotFound();
+             ->assertJson(['message' => 'Resource not found.']);
     }
 
     public function test_show_tool_not_found()
@@ -204,12 +220,13 @@ class ToolControllerTest extends TestCase
                  ->assertJson(['message' => 'Resource not found.']);
     }
 
-    public function test_guests_cannot_view_tools()
+    public function test_show_tool_guests_cannot_view_tools()
     {
         $tool = Tool::factory()->create();
 
         $this->getJson("/api/tools/{$tool->id}")
-             ->assertUnauthorized();
+             ->assertUnauthorized()
+             ->assertJson(['message' => 'Unauthenticated.']);
     }
 
     public function test_destroy_tool_successfull()
@@ -235,15 +252,16 @@ class ToolControllerTest extends TestCase
                  ->assertJson(['message' => 'Resource not found.']);
     }
 
-    public function test_guests_cannot_delete_tools()
+    public function test_destroy_tool_guests_cannot_delete_tools()
     {
         $tool = Tool::factory()->create();
 
         $this->deleteJson("/api/tools/{$tool->id}")
-            ->assertUnauthorized();
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthenticated.']);
     }
 
-    public function test_user_cannot_delete_others_tool()
+    public function test_destroy_tool_user_cannot_delete_others_tool()
     {
         $user = $this->createAuthenticatedUser();
 
@@ -254,7 +272,8 @@ class ToolControllerTest extends TestCase
 
         $this->actingAs($retrievedUser)
              ->deleteJson("/api/tools/{$tool->id}")
-             ->assertNotFound();
+             ->assertNotFound()
+             ->assertJson(['message' => 'Resource not found.']);
     }
 
     public function test_update_tool_successfull()
@@ -309,15 +328,16 @@ class ToolControllerTest extends TestCase
                  ->assertJsonValidationErrors(['title', 'link', 'description']);
     }
 
-    public function test_guests_cannot_update_tools()
+    public function test_update_tool_guests_cannot_update_tools()
     {
         $tool = Tool::factory()->create();
 
         $this->putJson("/api/tools/{$tool->id}")
-             ->assertUnauthorized();
+             ->assertUnauthorized()
+             ->assertJson(['message' => 'Unauthenticated.']);
     }
 
-    public function test_user_cannot_update_others_tool()
+    public function test_update_tool_user_cannot_update_others_tool()
     {
         $user = $this->createAuthenticatedUser();
         $unauthorizedUser = User::factory()->create();
@@ -329,7 +349,8 @@ class ToolControllerTest extends TestCase
 
         $this->actingAs($retrievedUser)
              ->putJson("/api/tools/{$tool->id}", $updatedData)
-             ->assertNotFound();
+             ->assertNotFound()
+             ->assertJson(['message' => 'Resource not found.']);
     }
 
     private function createAuthenticatedUser()

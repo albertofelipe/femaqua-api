@@ -6,6 +6,8 @@ composer install
 cp .env.example .env
 
 php artisan key:generate
+php artisan jwt:secret --force
+
 php artisan migrate --seed --force
 php artisan cache:clear
 php artisan config:clear
