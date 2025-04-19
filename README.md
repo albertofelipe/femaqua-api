@@ -65,7 +65,7 @@ docker compose up
 | Comando                     | Descrição                                  |
 |-----------------------------|--------------------------------------------|
 | `docker compose down`       | Para e remove todos os containers          |
-| `docker compose exec app bash` | Acessa o terminal do container da aplicação |
+| `docker compose exec php bash` | Acessa o terminal do container da aplicação |
 | `docker compose logs -f app`  | Monitora os logs em tempo real             |
 
 ## Acesso à Aplicação
@@ -139,22 +139,22 @@ DB_DATABASE=femaqua
 DB_USERNAME=root
 DB_PASSWORD=sua_senha_mysql
 ```
-### 3. Gere chave da aplicação
+### 4. Gere chave da aplicação
 ```bash
 php artisan key:generate
 ```
 
-### 4. Gere a chave JWT 
+### 5. Gere a chave JWT 
 ```bash
 php artisan jwt:secret --force
 ```
 
-### 5. Execute as migrations
+### 6. Execute as migrations
 ```bash
 php artisan migrate --seed
 ```
 
-### 6. Inicie o servidor
+### 7. Inicie o servidor
 ```bash
 php artisan serve --port=3000
 ```
